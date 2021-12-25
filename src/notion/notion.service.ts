@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
+import { Interval } from '@nestjs/schedule';
 import * as fetch from 'node-fetch';
 import { CONFIG_OPTIONS } from 'src/common/common.constants';
 import { HttpRequestOptions } from 'src/common/common.interfaces';
@@ -50,6 +50,19 @@ export class NotionService {
     } catch (error) {
       return error;
     }
+  }
+
+  async findPageByTicketRef(databaseId: string, ticketRef: string) {
+    const { ticketRefField } = this.options;
+    const page = await this.queryDatabaseData(databaseId, {
+      filter: {
+        property: ticketRefField,
+        formula: {
+          text: { equals: ticketRef },
+        },
+      },
+    });
+    return page;
   }
 
   async getDatabase(databaseId: string): Promise<RawDatabaseProps | undefined> {
@@ -177,6 +190,9 @@ export class NotionService {
       console.log(`[Ticket Type: ${ticketType}] No ticket to update!`);
       return;
     }
+    console.log(
+      `[Ticket Type: ${ticketType}] ${allTickets.length} ticket(s) to update.`,
+    );
     const { ticketIdField } = this.options;
     for (let i = 0; i < allTickets.length; i++) {
       const newId = i + count + 1;
@@ -214,7 +230,7 @@ export class NotionService {
     }
   }
 
-  @Cron('* * * * *')
+  @Interval(30000)
   async updateTaskIds() {
     let started = false;
     try {
