@@ -235,7 +235,8 @@ export class NotionService {
     let started = false;
     try {
       if (updateLock) {
-        throw new Error('Skip update. Previous process still running!');
+        console.log('Skip update. Previous process still running!');
+        return;
       }
       updateLock = true;
       started = true;

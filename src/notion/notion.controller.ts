@@ -14,10 +14,6 @@ export class NotionController {
   async redirectFromTicketRef(@Param() params, @Res() res) {
     const { notionDatabaseId } = this.options;
     const { ticketRef } = params;
-    if (!ticketRef) {
-      res.status(404).send('Ticket ref is required!');
-      return;
-    }
     const page = await this.notionService.findPageByTicketRef(
       notionDatabaseId,
       ticketRef,
