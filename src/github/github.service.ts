@@ -70,7 +70,7 @@ export class GithubService implements OnModuleInit {
   ) {
     console.log(`[${repoName}] Creating autolink with key ${keyPrefix}`);
     const { githubOrganization } = this.options;
-    const created = await this.authRequest(
+    return await this.authRequest(
       `/repos/${githubOrganization}/${repoName}/autolinks`,
       {
         method: 'POST',
@@ -80,7 +80,19 @@ export class GithubService implements OnModuleInit {
         },
       },
     );
-    console.log(created);
+  }
+
+  async deleteAutolinkForRepo(
+    repoName: string,
+    autolinkId: number,
+    keyPrefix: string,
+  ) {
+    console.log(`[${repoName}] Deleting autolink with key ${keyPrefix}`);
+    const { githubOrganization } = this.options;
+    return await this.authRequest(
+      `/repos/${githubOrganization}/${repoName}/autolinks/${autolinkId}`,
+      { method: 'DELETE' },
+    );
   }
 
   async orgCheckUp() {
@@ -124,12 +136,10 @@ export class GithubService implements OnModuleInit {
       const exists = autolinksKeys[keyPrefix];
       if (!exists || exists.urlTemplate !== urlTemplate) {
         // create
-        const created = await this.createAutolinkForRepo(
-          name,
-          keyPrefix,
-          urlTemplate,
-        );
+        await this.createAutolinkForRepo(name, keyPrefix, urlTemplate);
         // if exists, delete
+        if (exists)
+          await this.deleteAutolinkForRepo(name, exists.id, keyPrefix);
       }
     }
   }
