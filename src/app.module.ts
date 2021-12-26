@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import * as Joi from 'joi';
 import { NotionModule } from './notion/notion.module';
+import { GithubModule } from './github/github.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { NotionModule } from './notion/notion.module';
       ticketIdField: process.env.TICKET_ID_FIELD,
       ticketRefField: process.env.TICKET_REF_FIELD,
     }),
+    GithubModule,
     ScheduleModule.forRoot(),
   ],
   controllers: [],

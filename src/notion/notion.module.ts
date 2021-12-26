@@ -4,10 +4,7 @@ import { NotionController } from './notion.controller';
 import { NotionModuleOptions } from './notion.interfaces';
 import { NotionService } from './notion.service';
 
-@Module({
-  controllers: [NotionController],
-  providers: [NotionService],
-})
+@Module({})
 export class NotionModule {
   static forRoot(options: NotionModuleOptions): DynamicModule {
     return {
