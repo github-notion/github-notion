@@ -39,7 +39,32 @@ To use this for ticket management, you must have few properties in your Notion d
   - IMPORTANT NOTE: Leave this blank when you create a ticket, and this service will generate an ID for you. Never update this field manually!
 
 - Ticket Reference
+
   - Env Variables: `TICKET_REF_FIELD`
   - Type: formula (Formula must be: `TICKET_TYPE_FIELD`-`TICKET_ID_FIELD` (e.g. FEAT-1))
   - Example property name: TicketID
   - Description: This field is used to link github commit/PR to the notion page
+
+- Ticket Status
+  - Env Variables: `TICKET_STATUS_FIELD`
+  - Type: select
+  - Example property name: Status
+  - Description: This contains a list of statuses
+  - IMPORTANT NOTE: Make sure all options required in env variables `TICKET_STATUSES` is available in your database!
+
+### Other environment variables
+
+- `TICKET_TYPE_FIELD`: Refer to `Important Properties` of `Notion`
+- `TICKET_ID_FIELD`: Refer to `Important Properties` of `Notion`
+- `TICKET_REF_FIELD`: Refer to `Important Properties` of `Notion`
+- `TICKET_STATUS_FIELD`: Refer to `Important Properties` of `Notion`
+- `TICKET_STATUSES`: Pass a string that represents your statuses. `e.g. TICKET_STATUSES=Doing,Review,Done` Must follow same sequence as below:
+  1. Status for when a task is in progress
+  2. Status for when a task is being reviewed
+  3. Status for when a task is done
+- `GITHUB_USERNAME` (Optional): The github account that will be used to access all API calls.
+- `GITHUB_PERSONAL_ACCESS_TOKEN` (Optional): You can create a `Personal Access Token` under github personal account's settings page. You are encouraged to create a dummy account dedicated to your organization. Even github recommends this approach and calls it `machine user`
+- `GITHUB_ORGANIZATION` (Optional): The github organization to use this dashboard with.
+- `MANAGE_STATUS` (Optional, default to `false`): Whether the integration should update ticket statuses. Allowed values are: `true` | `false`
+- `MANAGE_AUTOLINKS`(Optional, default to `true`): Whether the integration should update autolinks of each repo. Allowed values are: `true` | `false`
+- `MANAGE_PUBLIC_REPO_AUTOLINKS` (Optional, default to `false`): Whether public repo's autolinks should be managed. This is useful if you don't want to expose ticket urls to public through public repos.

@@ -11,12 +11,16 @@ import { NotionModule } from './notion/notion.module';
       envFilePath: '.env.dev',
       ignoreEnvFile: process.env.NODE_ENV === 'production',
       validationSchema: Joi.object({
+        GITHUB_USERNAME: Joi.string(),
+        GITHUB_PERSONAL_ACCESS_TOKEN: Joi.string(),
+        MANAGE_STATUS: Joi.boolean(),
         NODE_ENV: Joi.string().valid('development', 'production').required(),
         NOTION_SECRET: Joi.string().required(),
         NOTION_DATABASE_ID: Joi.string().required(),
         TICKET_TYPE_FIELD: Joi.string().required(),
         TICKET_ID_FIELD: Joi.string().required(),
         TICKET_REF_FIELD: Joi.string().required(),
+        TICKET_STATUSES: Joi.string(),
       }),
     }),
     NotionModule.forRoot({
