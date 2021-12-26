@@ -37,7 +37,7 @@ export class NotionService {
     try {
       const rawData = await fetch(`${NOTION_API}${path}`, {
         method,
-        body,
+        body: JSON.stringify(body),
         headers: {
           Authorization: `Bearer ${this.options.notionSecret}`,
           'Content-Type': 'application/json',
@@ -167,7 +167,7 @@ export class NotionService {
       `/v1/databases/${databaseId}/query`,
       {
         method: 'POST',
-        body: JSON.stringify(queryParams),
+        body: queryParams,
       },
     );
     return database;
@@ -176,7 +176,7 @@ export class NotionService {
   async updatePage(pageId: string, properties: any) {
     await this.authRequest(`/v1/pages/${pageId}`, {
       method: 'PATCH',
-      body: JSON.stringify({ properties }),
+      body: { properties },
     });
   }
 
@@ -203,12 +203,10 @@ export class NotionService {
     }
   }
 
-  async validateDatabase(
-    databaseId: string,
-    ticketTypeField: string,
-  ): Promise<ComputedDatabase> {
+  async validateDatabase(): Promise<ComputedDatabase> {
     try {
-      const rawDatabase = await this.getDatabase(databaseId);
+      const { notionDatabaseId, ticketTypeField } = this.options;
+      const rawDatabase = await this.getDatabase(notionDatabaseId);
       if (!rawDatabase || !rawDatabase.properties) return databaseNotFoundError;
       const rawTags = rawDatabase.properties[ticketTypeField];
       if (!rawTags) return ticketTypeFieldNotFoundError;
@@ -240,10 +238,10 @@ export class NotionService {
       }
       updateLock = true;
       started = true;
-      const { notionDatabaseId, ticketTypeField } = this.options;
+      const { notionDatabaseId } = this.options;
       console.log('Start update task ID');
       const { database, error: validateDatabaseError } =
-        await this.validateDatabase(notionDatabaseId, ticketTypeField);
+        await this.validateDatabase();
       if (validateDatabaseError) throw new Error(validateDatabaseError);
       if (!database) throw new Error('Database not found!');
 

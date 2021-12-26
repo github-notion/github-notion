@@ -54,6 +54,13 @@ To use this for ticket management, you must have few properties in your Notion d
 
 ### Other environment variables
 
+- `DOMAIN`: Domain of your server. This will be used to update autolinks and webhooks on Github.
+- `GITHUB_USERNAME` (Optional): The github account that will be used to access all API calls.
+- `GITHUB_PERSONAL_ACCESS_TOKEN` (Optional): You can create a `Personal Access Token` under github personal account's settings page. You are encouraged to create a dummy account dedicated to your organization. Even github recommends this approach and calls it `machine user`
+- `GITHUB_ORGANIZATION` (Optional): The github organization to use this dashboard with.
+- `MANAGE_STATUS` (Optional, default to `false`): Whether the integration should update ticket statuses. Allowed values are: `true` | `false`
+- `MANAGE_AUTOLINKS`(Optional, default to `true`): Whether the integration should update autolinks of each repo. Allowed values are: `true` | `false`
+- `MANAGE_PUBLIC_REPO_AUTOLINKS` (Optional, default to `false`): Whether public repo's autolinks should be managed. This is useful if you don't want to expose ticket urls to public through public repos.
 - `TICKET_TYPE_FIELD`: Refer to `Important Properties` of `Notion`
 - `TICKET_ID_FIELD`: Refer to `Important Properties` of `Notion`
 - `TICKET_REF_FIELD`: Refer to `Important Properties` of `Notion`
@@ -62,9 +69,3 @@ To use this for ticket management, you must have few properties in your Notion d
   1. Status for when a task is in progress
   2. Status for when a task is being reviewed
   3. Status for when a task is done
-- `GITHUB_USERNAME` (Optional): The github account that will be used to access all API calls.
-- `GITHUB_PERSONAL_ACCESS_TOKEN` (Optional): You can create a `Personal Access Token` under github personal account's settings page. You are encouraged to create a dummy account dedicated to your organization. Even github recommends this approach and calls it `machine user`
-- `GITHUB_ORGANIZATION` (Optional): The github organization to use this dashboard with.
-- `MANAGE_STATUS` (Optional, default to `false`): Whether the integration should update ticket statuses. Allowed values are: `true` | `false`
-- `MANAGE_AUTOLINKS`(Optional, default to `true`): Whether the integration should update autolinks of each repo. Allowed values are: `true` | `false`
-- `MANAGE_PUBLIC_REPO_AUTOLINKS` (Optional, default to `false`): Whether public repo's autolinks should be managed. This is useful if you don't want to expose ticket urls to public through public repos.

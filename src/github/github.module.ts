@@ -1,11 +1,24 @@
-import { Module } from '@nestjs/common';
+import { DynamicModule, Module } from '@nestjs/common';
 import { GithubService } from './github.service';
 import { GithubController } from './github.controller';
-import { NotionModule } from 'src/notion/notion.module';
+import { GithubModuleOptions } from './github.interfaces';
+import { CONFIG_OPTIONS } from 'src/common/common.constants';
+import { NotionModule } from '../notion/notion.module';
 
-@Module({
-  imports: [NotionModule],
-  providers: [GithubService],
-  controllers: [GithubController],
-})
-export class GithubModule {}
+@Module({})
+export class GithubModule {
+  static forRoot(options: GithubModuleOptions): DynamicModule {
+    return {
+      module: GithubModule,
+      controllers: [GithubController],
+      providers: [
+        {
+          provide: CONFIG_OPTIONS,
+          useValue: options,
+        },
+        GithubService,
+      ],
+      imports: [NotionModule],
+    };
+  }
+}
