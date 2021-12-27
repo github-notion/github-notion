@@ -1,5 +1,4 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
-import { PATH_METADATA } from '@nestjs/common/constants';
 import { Interval } from '@nestjs/schedule';
 import * as fetch from 'node-fetch';
 import { CONFIG_OPTIONS } from 'src/common/common.constants';
@@ -10,9 +9,12 @@ import {
   GithubModuleOptions,
   GithubRepo,
   RawAutolinks,
+  RawWebhooks,
 } from './github.interfaces';
+import { formatDomain, makeWebhookUrl, transformRepo } from './github.utils';
 
 const GITHUB_API = 'https://api.github.com';
+const WEBHOOK_EVENTS = ['pull_request'];
 
 @Injectable()
 export class GithubService implements OnModuleInit {
@@ -82,6 +84,31 @@ export class GithubService implements OnModuleInit {
     );
   }
 
+  async createWebhookForOrg(): Promise<boolean> {
+    const { domain, githubOrganization } = this.options;
+    const url = makeWebhookUrl(domain);
+    const created = await this.authRequest(
+      `/orgs/${githubOrganization}/hooks`,
+      {
+        method: 'POST',
+        body: {
+          // this should always be `web` according to github documentation
+          name: 'web',
+          config: {
+            url,
+            content_type: 'json',
+          },
+          events: WEBHOOK_EVENTS,
+        },
+      },
+    );
+    if (created.errors) {
+      console.log(created);
+      return false;
+    }
+    return true;
+  }
+
   async deleteAutolinkForRepo(
     repoName: string,
     autolinkId: number,
@@ -95,22 +122,7 @@ export class GithubService implements OnModuleInit {
     );
   }
 
-  async orgCheckUp() {
-    const { githubOrganization } = this.options;
-    if (!githubOrganization) return;
-    const repos = await this.getRepos();
-    if (repos && repos.length > 0) {
-      const { database } = await this.notionService.validateDatabase();
-      // we still need to enter loop for webhook check even if database returns undefined
-      const tags = database?.tags || [];
-      for (let i = 0; i < repos.length; i++) {
-        const repo = repos[i];
-        if (tags.length > 0) await this.updateAutolinks(repo.name, tags);
-      }
-    }
-  }
-
-  async updateAutolinks(name: string, tags: string[]) {
+  async manageAutolinks(name: string, tags: string[]) {
     const { domain, manageAutolinks, githubOrganization } = this.options;
     if (!manageAutolinks) return;
     const autolinks: RawAutolinks[] = await this.authRequest(
@@ -129,10 +141,9 @@ export class GithubService implements OnModuleInit {
     // check if autolink exists and match, if not, create and delete unmatching autolinks
     for (let i = 0; i < tags.length; i++) {
       const tag = tags[i];
-      const fomattedDomain =
-        domain.charAt(domain.length - 1) === '/' ? domain.slice(0, -1) : domain;
+      const formattedDomain = formatDomain(domain);
       const keyPrefix = `${tag}-`;
-      const urlTemplate = `${fomattedDomain}/notion/ticket/<num>`;
+      const urlTemplate = `${formattedDomain}/notion/ticket/<num>`;
       const exists = autolinksKeys[keyPrefix];
       if (!exists || exists.urlTemplate !== urlTemplate) {
         // create
@@ -140,6 +151,59 @@ export class GithubService implements OnModuleInit {
         // if exists, delete
         if (exists)
           await this.deleteAutolinkForRepo(name, exists.id, keyPrefix);
+      }
+    }
+  }
+
+  async manageWebhooks() {
+    const { domain, githubOrganization } = this.options;
+    const webhooks: RawWebhooks[] = await this.authRequest(
+      `/orgs/${githubOrganization}/hooks`,
+      {},
+    );
+    // check if webhook already exists
+    if (webhooks && webhooks.length > 0) {
+      for (let i = 0; i < webhooks.length; i++) {
+        const hook = webhooks[i];
+        // hook exists, check whether we need to update it
+        if (hook.config.url === makeWebhookUrl(domain)) {
+          // this needs to change if we want to subscribe to more events
+          if (
+            hook.events.length !== 1 ||
+            hook.events[0] !== WEBHOOK_EVENTS[0]
+          ) {
+            console.log('Webhook events not matching! Updating it!');
+            await this.updateWebhook(hook.id);
+          }
+          // avoid creating hook if there's matching webhook
+          return;
+        }
+      }
+    }
+    // create webhook if exist check failed
+    console.log('No valid webhook found, creating one.');
+    await this.createWebhookForOrg();
+  }
+
+  async orgCheckUp() {
+    const { githubOrganization } = this.options;
+    if (!githubOrganization) return;
+    await this.manageWebhooks();
+    const repos = await this.getRepos();
+    if (repos && repos.length > 0) {
+      const { database } = await this.notionService.validateDatabase();
+      if (!database) {
+        console.log('Error getting notion database');
+        return;
+      }
+      if (database.tags.length === 0) {
+        console.log('No ticket type found!');
+        return;
+      }
+      // manage autolinks for each repos
+      for (let i = 0; i < repos.length; i++) {
+        const repo = repos[i];
+        await this.manageAutolinks(repo.name, database.tags);
       }
     }
   }
@@ -161,7 +225,7 @@ export class GithubService implements OnModuleInit {
     if (repos && rawRepos.length > 0) {
       for (let i = 0; i < rawRepos.length; i++) {
         const cur = rawRepos[i];
-        const transformedRepo = this.transformRepo(cur);
+        const transformedRepo = transformRepo(cur);
         console.log(
           `${i + 1}: [${transformedRepo.isPrivate ? 'private' : 'public'}] ${
             transformedRepo.name
@@ -178,26 +242,28 @@ export class GithubService implements OnModuleInit {
     return githubPersonalAccessToken && githubUsername;
   }
 
-  transformRepo({
-    id,
-    name,
-    full_name,
-    private: isPrivate,
-    git_url,
-    ssh_url,
-    clone_url,
-    svn_url,
-  }): GithubRepo {
-    return {
-      id,
-      name,
-      fullName: full_name,
-      isPrivate,
-      gitUrl: git_url,
-      sshUrl: ssh_url,
-      cloneUrl: clone_url,
-      svnUrl: svn_url,
-    };
+  // TODO: Add secret to config for more secured usage
+  async updateWebhook(hookId: number): Promise<boolean> {
+    const { domain, githubOrganization } = this.options;
+    const url = makeWebhookUrl(domain);
+    const updated = await this.authRequest(
+      `/orgs/${githubOrganization}/hooks/${hookId}`,
+      {
+        method: 'PATCH',
+        body: {
+          config: {
+            url,
+            content_type: 'json',
+          },
+          events: WEBHOOK_EVENTS,
+        },
+      },
+    );
+    if (updated.errors) {
+      console.log(updated.errors);
+      return false;
+    }
+    return true;
   }
 
   async onModuleInit() {

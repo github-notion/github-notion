@@ -4,7 +4,8 @@
 
 `Github API`
 
-- [ ] Check whether `Autolinks` feature is enabled on Github, if so, update `Autolinks` based on `TICKET_TYPE_FIELD` of Notion. This happens every hour.
+- [x] Update `Autolinks` based on `TICKET_TYPE_FIELD` of Notion. This happens every hour.
+- [ ] Create `Github Webhooks` if it doesn't exists.
 
 `Github Webhooks`
 For each events, this integration will append a new block to the ticket's page content with relevant url. If env variables `MANAGE_STATUS` is set to `true`, each event will update task status if task is found in commit message.
