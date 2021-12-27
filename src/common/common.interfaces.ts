@@ -3,7 +3,7 @@ export interface Params {
 }
 
 export interface HttpRequestOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'PATCH';
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   headers?: any;
   body?: any;
   params?: Params;
