@@ -38,7 +38,13 @@ export class GithubService implements OnModuleInit {
 
   async authRequest(
     path: string,
-    { method = 'GET', body, headers, params }: HttpRequestOptions,
+    {
+      method = 'GET',
+      body,
+      headers,
+      params,
+      fullUrl,
+    }: HttpRequestOptions & { fullUrl?: boolean },
   ) {
     try {
       const { githubUsername, githubPersonalAccessToken } = this.options;
@@ -46,16 +52,19 @@ export class GithubService implements OnModuleInit {
       const encodedAuthToken = Buffer.from(
         `${githubUsername}:${githubPersonalAccessToken}`,
       ).toString('base64');
-      const rawaData = await fetch(`${GITHUB_API}${path}${queryString}`, {
-        method,
-        body: JSON.stringify(body),
-        headers: {
-          Accept: 'application/vnd.github.v3+json',
-          Authorization: `Basic ${encodedAuthToken}`,
-          'Content-Type': 'application/json',
-          ...headers,
+      const rawaData = await fetch(
+        `${fullUrl ? '' : GITHUB_API}${path}${queryString}`,
+        {
+          method,
+          body: JSON.stringify(body),
+          headers: {
+            Accept: 'application/vnd.github.v3+json',
+            Authorization: `Basic ${encodedAuthToken}`,
+            'Content-Type': 'application/json',
+            ...headers,
+          },
         },
-      });
+      );
       const jsonData = await rawaData.json();
       return jsonData;
     } catch (error) {
@@ -275,7 +284,10 @@ export class GithubService implements OnModuleInit {
   // ... methods required for webhooks to access more information on github
 
   async getCommitsFromCommitsUrl(url: string): Promise<RawCommits[]> {
-    const res = await this.authRequest(url, { params: { per_page: 100 } });
+    const res = await this.authRequest(url, {
+      params: { per_page: 100 },
+      fullUrl: true,
+    });
     if (res?.length === undefined) {
       console.log('Error getting commits from PR');
       return [];
@@ -284,7 +296,7 @@ export class GithubService implements OnModuleInit {
   }
 
   async getDiffFromDiffUrl(url: string): Promise<any> {
-    const res = await this.authRequest(url, {});
+    const res = await this.authRequest(url, { fullUrl: true });
     console.log(res);
     return res;
   }
@@ -322,25 +334,30 @@ export class GithubService implements OnModuleInit {
   // ... all webhooks
 
   async pullRequestOpened({
-    pull_request: { title, html_url, diff_url, commits_url, id },
+    pull_request: { number, title, html_url, diff_url, commits_url, id },
+    repository: { full_name },
   }: RawHookPullsOpened) {
+    console.log(`PR #${number} opened @ ${full_name}`);
     const { database } = await this.notionService.validateDatabase();
     if (!database) {
       console.log('Error getting notion database');
       return;
     }
-    const diff = await this.getDiffFromDiffUrl(diff_url);
-    console.log(diff);
     const commits = await this.getCommitsFromCommitsUrl(commits_url);
-    console.log(commits);
     let summary = title;
     commits.forEach((commit) => {
-      summary += commit.commit.message;
+      summary += ` ${commit.commit.message}`;
     });
     const titleMentions = findTicketRefInString(summary, database.tags);
-    console.log(titleMentions);
     if (titleMentions.length === 0)
       return console.log(`No ticket mentioned in PR #${id}`);
+
+    // make a method in notion service called updateTicketWithPR
+    // which will check if existing PR filed is filled, if not, fill it, else, append a message at top saying "Mentioned in PR#number [link to PR]"
+    // also will update ticket status depending on whether it's open, in progress, draft, merged
+
+    // check if there's other comment in this PR by this bot
+    // then check if we're going to post redundant content, if not, post new comment with QA template, and mentioned tickets
   }
 
   async onModuleInit() {
