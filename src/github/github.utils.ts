@@ -30,5 +30,5 @@ export const formatDomain = (domain: string) => {
 
 export const makeWebhookUrl = (domain: string) => {
   const formattedDomain = formatDomain(domain);
-  return `${formattedDomain}/github/notion-webhook`;
+  return `${formattedDomain}/github/notion-webhook`.toLowerCase();
 };

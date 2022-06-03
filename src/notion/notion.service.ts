@@ -239,7 +239,7 @@ export class NotionService {
       updateLock = true;
       started = true;
       const { notionDatabaseId } = this.options;
-      console.log('Start update task ID');
+
       const { database, error: validateDatabaseError } =
         await this.validateDatabase();
       if (validateDatabaseError) throw new Error(validateDatabaseError);
@@ -254,6 +254,7 @@ export class NotionService {
         tagsCount[tags[i]] = count;
       }
       if (tags.length === 0) throw new Error('No tags count.');
+      console.log('Start update task ID');
       for (let i = 0; i < tags.length; i++) {
         const tag = tags[i];
         await this.updateTicketsWithType(notionDatabaseId, tag, tagsCount[tag]);

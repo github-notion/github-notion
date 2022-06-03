@@ -5,7 +5,7 @@
 `Github API`
 
 - [x] Update `Autolinks` based on `TICKET_TYPE_FIELD` of Notion. This happens every hour.
-- [ ] Create `Github Webhooks` if it doesn't exists.
+- [x] Create `Github Webhooks` if it doesn't exists.
 
 `Github Webhooks`
 For each events, this integration will append a new block to the ticket's page content with relevant url. If env variables `MANAGE_STATUS` is set to `true`, each event will update task status if task is found in commit message.
@@ -57,7 +57,7 @@ To use this for ticket management, you must have few properties in your Notion d
 
 - `DOMAIN`: Domain of your server. This will be used to update autolinks and webhooks on Github.
 - `GITHUB_USERNAME` (Optional): The github account that will be used to access all API calls.
-- `GITHUB_PERSONAL_ACCESS_TOKEN` (Optional): You can create a `Personal Access Token` under github personal account's settings page. You are encouraged to create a dummy account dedicated to your organization. Even github recommends this approach and calls it `machine user`
+- `GITHUB_PERSONAL_ACCESS_TOKEN` (Optional): You can create a `Personal Access Token` under github personal account's settings page. You are encouraged to create a dummy account dedicated to your organization. Github recommends this approach and calls it `machine user`
 - `GITHUB_ORGANIZATION` (Optional): The github organization to use this dashboard with.
 - `MANAGE_STATUS` (Optional, default to `false`): Whether the integration should update ticket statuses. Allowed values are: `true` | `false`
 - `MANAGE_AUTOLINKS`(Optional, default to `true`): Whether the integration should update autolinks of each repo. Allowed values are: `true` | `false`
