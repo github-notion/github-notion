@@ -338,6 +338,7 @@ export class GithubService implements OnModuleInit {
       summary += commit.commit.message;
     });
     const titleMentions = findTicketRefInString(summary, database.tags);
+    console.log(titleMentions);
     if (titleMentions.length === 0)
       return console.log(`No ticket mentioned in PR #${id}`);
   }
