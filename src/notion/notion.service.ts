@@ -240,6 +240,7 @@ export class NotionService {
   async updateTicketStatus(pageId: string, status: Status): Promise<void> {
     const { manageStatus } = this.options;
     const statusString = this.getStatus(status);
+    console.log(statusString);
     if (!manageStatus || !statusString) return;
     const page = await this.getPage(pageId);
     console.log(page);
@@ -368,7 +369,6 @@ export class NotionService {
         tagsCount[tags[i]] = count;
       }
       if (tags.length === 0) throw new Error('No tags count.');
-      console.log('Start update task ID');
       for (let i = 0; i < tags.length; i++) {
         const tag = tags[i];
         await this.updateTicketsWithType(notionDatabaseId, tag, tagsCount[tag]);
