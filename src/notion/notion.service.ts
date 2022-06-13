@@ -16,6 +16,7 @@ import {
   GetTicketTypeIDCountOutput,
   NotionModuleOptions,
   QueryDatabaseProps,
+  RawBlockDataProps,
   RawDatabaseDataProps,
   RawDatabaseProps,
   RawPageProps,
@@ -63,6 +64,12 @@ export class NotionService {
       },
     });
     return page;
+  }
+
+  async getBlockChildren(
+    blockOrPageId: string,
+  ): Promise<RawBlockDataProps | undefined> {
+    return await this.authRequest(`/v1/blocks/${blockOrPageId}/children`, {});
   }
 
   async getDatabase(databaseId: string): Promise<RawDatabaseProps | undefined> {
@@ -178,6 +185,53 @@ export class NotionService {
       method: 'PATCH',
       body: { properties },
     });
+  }
+
+  async updateTicketWithPR(ticketRef: string, prUrl: string): Promise<void> {
+    const { notionDatabaseId, ticketPrLinkField } = this.options;
+    const { results } = await this.findPageByTicketRef(
+      notionDatabaseId,
+      ticketRef,
+    );
+
+    const isSameUrl = (url: string | null): boolean =>
+      Boolean(url) && url.toLowerCase() === prUrl.toLowerCase();
+
+    if (results) {
+      results.forEach(async ({ id, object, properties }) => {
+        const defaultPrLink = properties[ticketPrLinkField]?.url;
+        if (defaultPrLink === null) {
+          await this.updatePage(id, { [ticketPrLinkField]: { url: prUrl } });
+        } else {
+          // mentioned in PR Link property
+          if (isSameUrl(defaultPrLink)) return;
+          const { results: children } = await this.getBlockChildren(id);
+          let mentioned = false;
+          if (children) {
+            // loop every block in a notion page
+            children.forEach((block) => {
+              // each block can have multiple text object
+              // e.g. if we have a block like "Mention in MENTION_PR_LINK"
+              // we will get 2 items in text
+              // one with type  "text", which is for content 'Mention in'
+              // the other one with type "mention", with href as the pr link
+              // we need to check each block to see if there's a type "mention" with same PR link
+              const textArray = block[block.type]?.text;
+              if (textArray) {
+                textArray.forEach(({ type, href }) => {
+                  if (type === 'mention' && isSameUrl(href)) {
+                    mentioned = true;
+                  }
+                });
+              }
+            });
+            if (!mentioned) {
+              // append a block to page
+            }
+          }
+        }
+      });
+    }
   }
 
   async updateTicketsWithType(

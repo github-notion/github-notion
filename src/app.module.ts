@@ -36,6 +36,7 @@ import { GithubModule } from './github/github.module';
       ticketTypeField: process.env.TICKET_TYPE_FIELD,
       ticketIdField: process.env.TICKET_ID_FIELD,
       ticketRefField: process.env.TICKET_REF_FIELD,
+      ticketPrLinkField: process.env.TICKET_PR_LINK_FIELD,
     }),
     GithubModule.forRoot({
       domain: process.env.DOMAIN,

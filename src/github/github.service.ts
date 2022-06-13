@@ -334,7 +334,7 @@ export class GithubService implements OnModuleInit {
   // ... all webhooks
 
   async pullRequestOpened({
-    pull_request: { number, title, html_url, diff_url, commits_url, id },
+    pull_request: { number, title, html_url, commits_url, id },
     repository: { full_name },
   }: RawHookPullsOpened) {
     console.log(`PR #${number} opened @ ${full_name}`);
@@ -348,9 +348,13 @@ export class GithubService implements OnModuleInit {
     commits.forEach((commit) => {
       summary += ` ${commit.commit.message}`;
     });
-    const titleMentions = findTicketRefInString(summary, database.tags);
-    if (titleMentions.length === 0)
+    const refsMentioned = findTicketRefInString(summary, database.tags);
+    if (refsMentioned.length === 0)
       return console.log(`No ticket mentioned in PR #${id}`);
+
+    refsMentioned.forEach((ref) => {
+      this.notionService.updateTicketWithPR(ref, html_url);
+    });
 
     // make a method in notion service called updateTicketWithPR
     // which will check if existing PR filed is filled, if not, fill it, else, append a message at top saying "Mentioned in PR#number [link to PR]"
