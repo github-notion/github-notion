@@ -263,31 +263,23 @@ export class NotionService {
     if (results) {
       for (let i = 0; i < results.length; i++) {
         const { id, properties } = results[i];
+        this.updateTicketStatus(id, Status.IN_PROGRESS);
         const defaultPrLink = properties[ticketPrLinkField]?.url;
         if (defaultPrLink === null) {
           await this.updatePage(id, { [ticketPrLinkField]: { url: prUrl } });
         } else {
           // already mentioned in PR Link property
           if (isSameUrl(defaultPrLink)) return;
-          const { results: children } = await this.getBlockChildren(id);
+          const { results: blocks } = await this.getBlockChildren(id);
           let mentioned = false;
-          if (children) {
-            // loop every block in a notion page
-            children.forEach((block) => {
-              // each block can have multiple text object
-              // e.g. if we have a block like "Mention in MENTION_PR_LINK"
-              // we will get 2 items in text
-              // one with type  "text", which is for content 'Mention in'
-              // the other one with type "mention", with href as the pr link
-              // we need to check each block to see if there's a type "mention" with same PR link
+          if (blocks) {
+            blocks.forEach((block) => {
               const textArray = block[block.type]?.rich_text;
-              if (textArray) {
+              if (textArray)
                 textArray.forEach(({ href, text }) => {
-                  if (isSameUrl(href) || isSameUrl(text?.link?.url)) {
+                  if (isSameUrl(href) || isSameUrl(text?.link?.url))
                     mentioned = true;
-                  }
                 });
-              }
             });
             if (!mentioned) {
               mentioned = true;
@@ -295,7 +287,6 @@ export class NotionService {
             }
           }
         }
-        this.updateTicketStatus(id, Status.IN_PROGRESS);
       }
     }
   }
