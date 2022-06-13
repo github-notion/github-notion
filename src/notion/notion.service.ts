@@ -251,7 +251,6 @@ export class NotionService {
   }
 
   async updateTicketWithPR(ticketRef: string, prUrl: string): Promise<void> {
-    const handledTicket = new Set();
     const { notionDatabaseId, ticketPrLinkField } = this.options;
     const { results } = await this.findPageByTicketRef(
       notionDatabaseId,
@@ -264,41 +263,39 @@ export class NotionService {
     if (results) {
       results.forEach(async ({ id, properties }) => {
         const defaultPrLink = properties[ticketPrLinkField]?.url;
-        if (!handledTicket.has(ticketRef)) {
-          handledTicket.add(ticketRef);
-          if (defaultPrLink === null) {
-            await this.updatePage(id, { [ticketPrLinkField]: { url: prUrl } });
-          } else {
-            // already mentioned in PR Link property
-            if (isSameUrl(defaultPrLink)) return;
-            const { results: children } = await this.getBlockChildren(id);
-            let mentioned = false;
-            if (children) {
-              // loop every block in a notion page
-              children.forEach((block) => {
-                // each block can have multiple text object
-                // e.g. if we have a block like "Mention in MENTION_PR_LINK"
-                // we will get 2 items in text
-                // one with type  "text", which is for content 'Mention in'
-                // the other one with type "mention", with href as the pr link
-                // we need to check each block to see if there's a type "mention" with same PR link
-                const textArray = block[block.type]?.rich_text;
-                if (textArray) {
-                  textArray.forEach(({ href, text }) => {
-                    if (isSameUrl(href) || isSameUrl(text?.link?.url)) {
-                      mentioned = true;
-                    }
-                  });
-                }
-              });
-              if (!mentioned) {
-                // append a block to page
-                await this.appendBlockChildren(id, makePrUrlMention(prUrl));
+        if (defaultPrLink === null) {
+          await this.updatePage(id, { [ticketPrLinkField]: { url: prUrl } });
+        } else {
+          // already mentioned in PR Link property
+          if (isSameUrl(defaultPrLink)) return;
+          const { results: children } = await this.getBlockChildren(id);
+          let mentioned = false;
+          if (children) {
+            // loop every block in a notion page
+            children.forEach((block) => {
+              // each block can have multiple text object
+              // e.g. if we have a block like "Mention in MENTION_PR_LINK"
+              // we will get 2 items in text
+              // one with type  "text", which is for content 'Mention in'
+              // the other one with type "mention", with href as the pr link
+              // we need to check each block to see if there's a type "mention" with same PR link
+              const textArray = block[block.type]?.rich_text;
+              if (textArray) {
+                textArray.forEach(({ href, text }) => {
+                  if (isSameUrl(href) || isSameUrl(text?.link?.url)) {
+                    mentioned = true;
+                  }
+                });
               }
+            });
+            if (!mentioned) {
+              // append a block to page
+              mentioned = true;
+              await this.appendBlockChildren(id, makePrUrlMention(prUrl));
             }
           }
-          this.updateTicketStatus(id, Status.IN_PROGRESS);
         }
+        this.updateTicketStatus(id, Status.IN_PROGRESS);
       });
     }
   }
