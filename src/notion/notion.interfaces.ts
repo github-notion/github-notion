@@ -6,6 +6,7 @@ export interface NotionModuleOptions {
   ticketIdField: string;
   ticketRefField: string;
   ticketPrLinkField: string;
+  ticketStatusField: string;
   ticketStatus?: string[];
 }
 

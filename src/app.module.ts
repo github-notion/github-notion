@@ -38,6 +38,7 @@ import { GithubModule } from './github/github.module';
       ticketIdField: process.env.TICKET_ID_FIELD,
       ticketRefField: process.env.TICKET_REF_FIELD,
       ticketPrLinkField: process.env.TICKET_PR_LINK_FIELD,
+      ticketStatusField: process.env.TICKET_STATUS_FIELD,
       ticketStatus: process.env.TICKET_STATUSES?.split(','),
     }),
     GithubModule.forRoot({

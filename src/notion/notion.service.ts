@@ -238,12 +238,16 @@ export class NotionService {
   }
 
   async updateTicketStatus(pageId: string, status: Status): Promise<void> {
-    const { manageStatus } = this.options;
+    const { manageStatus, ticketStatusField } = this.options;
     const statusString = this.getStatus(status);
     console.log(statusString);
-    if (!manageStatus || !statusString) return;
+    if (!manageStatus || !statusString || !ticketStatusField) return;
     const page = await this.getPage(pageId);
-    console.log(page);
+    const statusObj = page.properties?.[ticketStatusField];
+    // must be a select type
+    if (statusObj?.select) {
+      console.log(statusObj.select);
+    }
   }
 
   async updateTicketWithPR(ticketRef: string, prUrl: string): Promise<void> {
