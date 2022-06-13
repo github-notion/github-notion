@@ -356,8 +356,6 @@ export class GithubService implements OnModuleInit {
       this.notionService.updateTicketWithPR(ref, html_url);
     });
 
-    // make a method in notion service called updateTicketWithPR
-    // which will check if existing PR filed is filled, if not, fill it, else, append a message at top saying "Mentioned in PR#number [link to PR]"
     // also will update ticket status depending on whether it's open, in progress, draft, merged
 
     // check if there's other comment in this PR by this bot

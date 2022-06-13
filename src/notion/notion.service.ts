@@ -26,6 +26,36 @@ import {
 const NOTION_API = 'https://api.notion.com';
 let updateLock = false;
 
+const makePrUrlMention = (prUrl: string): AppendBlockChildren[] => [
+  {
+    object: 'block',
+    type: 'paragraph',
+    paragraph: {
+      rich_text: [
+        {
+          type: 'text',
+          text: {
+            content: 'Mentioned in: ',
+            link: null,
+          },
+          plain_text: 'Mentioned in: ',
+        },
+        {
+          type: 'text',
+          text: {
+            content: prUrl,
+            link: {
+              type: 'url',
+              url: prUrl,
+            },
+          },
+          href: prUrl,
+          plain_text: prUrl,
+        },
+      ],
+    },
+  },
+];
 @Injectable()
 export class NotionService {
   constructor(
@@ -237,36 +267,7 @@ export class NotionService {
             });
             if (!mentioned) {
               // append a block to page
-              await this.appendBlockChildren(id, [
-                {
-                  object: 'block',
-                  type: 'paragraph',
-                  paragraph: {
-                    rich_text: [
-                      {
-                        type: 'text',
-                        text: {
-                          content: 'Mentioned in: ',
-                          link: null,
-                        },
-                        plain_text: 'Mentioned in: ',
-                      },
-                      {
-                        type: 'text',
-                        text: {
-                          content: prUrl,
-                          link: {
-                            type: 'url',
-                            url: prUrl,
-                          },
-                        },
-                        href: prUrl,
-                        plain_text: prUrl,
-                      },
-                    ],
-                  },
-                },
-              ]);
+              await this.appendBlockChildren(id, makePrUrlMention(prUrl));
             }
           }
         }
