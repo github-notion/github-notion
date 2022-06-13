@@ -261,7 +261,8 @@ export class NotionService {
       Boolean(url) && url.toLowerCase() === prUrl.toLowerCase();
 
     if (results) {
-      results.forEach(async ({ id, properties }) => {
+      for (let i = 0; i < results.length; i++) {
+        const { id, properties } = results[i];
         const defaultPrLink = properties[ticketPrLinkField]?.url;
         if (defaultPrLink === null) {
           await this.updatePage(id, { [ticketPrLinkField]: { url: prUrl } });
@@ -296,7 +297,7 @@ export class NotionService {
           }
         }
         this.updateTicketStatus(id, Status.IN_PROGRESS);
-      });
+      }
     }
   }
 
