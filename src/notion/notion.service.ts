@@ -286,10 +286,10 @@ export class NotionService {
             if (!mentioned) {
               // append a block to page
               await this.appendBlockChildren(id, makePrUrlMention(prUrl));
-              this.updateTicketStatus(id, Status.IN_PROGRESS);
             }
           }
         }
+        this.updateTicketStatus(id, Status.IN_PROGRESS);
       });
     }
   }
