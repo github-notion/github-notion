@@ -21,6 +21,7 @@ import {
   RawDatabaseDataProps,
   RawDatabaseProps,
   RawPageProps,
+  Status,
 } from './notion.interfaces';
 
 const NOTION_API = 'https://api.notion.com';
@@ -115,6 +116,15 @@ export class NotionService {
   async getDatabase(databaseId: string): Promise<RawDatabaseProps | undefined> {
     const database = await this.authRequest(`/v1/databases/${databaseId}`, {});
     return database;
+  }
+
+  async getPage(pageId: string): Promise<RawPageProps | undefined> {
+    return await this.authRequest(`/v1/pages/${pageId}`, {});
+  }
+
+  getStatus(status: Status): string | undefined {
+    const { ticketStatus } = this.options;
+    return ticketStatus?.[status];
   }
 
   async getTicketsOfType(
@@ -227,6 +237,14 @@ export class NotionService {
     });
   }
 
+  async updateTicketStatus(pageId: string, status: Status): Promise<void> {
+    const { manageStatus } = this.options;
+    const statusString = this.getStatus(status);
+    if (!manageStatus || !statusString) return;
+    const page = await this.getPage(pageId);
+    console.log(page);
+  }
+
   async updateTicketWithPR(ticketRef: string, prUrl: string): Promise<void> {
     const { notionDatabaseId, ticketPrLinkField } = this.options;
     const { results } = await this.findPageByTicketRef(
@@ -268,6 +286,7 @@ export class NotionService {
             if (!mentioned) {
               // append a block to page
               await this.appendBlockChildren(id, makePrUrlMention(prUrl));
+              this.updateTicketStatus(id, Status.IN_PROGRESS);
             }
           }
         }

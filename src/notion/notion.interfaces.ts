@@ -1,12 +1,22 @@
 export interface NotionModuleOptions {
+  manageStatus: boolean;
   notionSecret: string;
   notionDatabaseId: string;
   ticketTypeField: string;
   ticketIdField: string;
   ticketRefField: string;
   ticketPrLinkField: string;
+  ticketStatus?: string[];
 }
 
+export enum Status {
+  TODO = 0,
+  BLOCKED = 1,
+  IN_PROGRESS = 2,
+  REVIEW = 3,
+  DONE = 4,
+  ARCHIVED = 5,
+}
 export interface SortCriteriaObject {
   /** The name of the property to sort against. */
   property?: string;

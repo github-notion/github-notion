@@ -66,7 +66,10 @@ To use this for ticket management, you must have few properties in your Notion d
 - `TICKET_ID_FIELD`: Refer to `Important Properties` of `Notion`
 - `TICKET_REF_FIELD`: Refer to `Important Properties` of `Notion`
 - `TICKET_STATUS_FIELD`: Refer to `Important Properties` of `Notion`
-- `TICKET_STATUSES`: Pass a string that represents your statuses. `e.g. TICKET_STATUSES=Doing,Review,Done` Must follow same sequence as below:
-  1. Status for when a task is in progress
-  2. Status for when a task is being reviewed
-  3. Status for when a task is done
+- `TICKET_STATUSES`: Pass a string that represents your statuses. `e.g. TICKET_STATUSES=To Do,Blocked,In Progress,Review,Done,Archived` Must follow same sequence as below:
+  1. status for when a task is to-do
+  2. status for when a task is blocked
+  3. Status for when a task is in progress
+  4. Status for when a task is being reviewed
+  5. Status for when a task is done
+  6. Status for when a task is archived

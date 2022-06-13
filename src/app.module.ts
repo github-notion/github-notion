@@ -31,19 +31,20 @@ import { GithubModule } from './github/github.module';
       }),
     }),
     NotionModule.forRoot({
+      manageStatus: process.env.MANAGE_STATUS === 'true',
       notionSecret: process.env.NOTION_SECRET,
       notionDatabaseId: process.env.NOTION_DATABASE_ID,
       ticketTypeField: process.env.TICKET_TYPE_FIELD,
       ticketIdField: process.env.TICKET_ID_FIELD,
       ticketRefField: process.env.TICKET_REF_FIELD,
       ticketPrLinkField: process.env.TICKET_PR_LINK_FIELD,
+      ticketStatus: process.env.TICKET_STATUSES?.split(','),
     }),
     GithubModule.forRoot({
       domain: process.env.DOMAIN,
       githubUsername: process.env.GITHUB_USERNAME,
       githubPersonalAccessToken: process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
       githubOrganization: process.env.GITHUB_ORGANIZATION,
-      manageStatus: process.env.MANAGE_STATUS === 'true',
       manageAutolinks: process.env.MANAGE_AUTOLINKS !== 'false',
       managePublicRepoAutolinks:
         process.env.MANAGE_PUBLIC_REPO_AUTOLINKS === 'true',

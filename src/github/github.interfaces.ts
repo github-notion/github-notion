@@ -3,7 +3,6 @@ export interface GithubModuleOptions {
   githubUsername?: string;
   githubPersonalAccessToken?: string;
   githubOrganization?: string;
-  manageStatus: boolean;
   manageAutolinks: boolean;
   managePublicRepoAutolinks: boolean;
 }
