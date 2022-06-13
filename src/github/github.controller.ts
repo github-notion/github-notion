@@ -14,7 +14,11 @@ export class GithubController {
   webhookListener(@Req() req, @Body() body) {
     if (body) {
       console.log(body.action);
-      if (body.action === 'opened' || body.action === 'reopened') {
+      if (
+        body.action === 'opened' ||
+        body.action === 'reopened' ||
+        body.action === 'synchronize'
+      ) {
         this.githubService.pullRequestOpened(body);
       }
     }
