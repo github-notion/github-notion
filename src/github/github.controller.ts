@@ -13,7 +13,6 @@ export class GithubController {
   @Post('/webhook')
   webhookListener(@Req() req, @Body() body) {
     if (body) {
-      console.log(body.action);
       if (
         body.action === 'opened' ||
         body.action === 'reopened' ||
