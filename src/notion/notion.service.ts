@@ -290,6 +290,7 @@ export class NotionService {
               }
             });
             if (!mentioned) {
+              console.log(`Append ${i}`);
               // append a block to page a
               mentioned = true;
               await this.appendBlockChildren(id, makePrUrlMention(prUrl));
