@@ -265,6 +265,7 @@ export class NotionService {
       results.forEach(async ({ id, properties }) => {
         const defaultPrLink = properties[ticketPrLinkField]?.url;
         if (!handledTicket.has(ticketRef)) {
+          handledTicket.add(ticketRef);
           if (defaultPrLink === null) {
             await this.updatePage(id, { [ticketPrLinkField]: { url: prUrl } });
           } else {
@@ -297,7 +298,6 @@ export class NotionService {
             }
           }
           this.updateTicketStatus(id, Status.IN_PROGRESS);
-          handledTicket.add(ticketRef);
         }
       });
     }
