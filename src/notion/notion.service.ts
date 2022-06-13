@@ -283,6 +283,7 @@ export class NotionService {
             });
             if (!mentioned) {
               mentioned = true;
+              console.log('wtv');
               this.appendBlockChildren(id, makePrUrlMention(prUrl));
             }
           }
