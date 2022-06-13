@@ -12,6 +12,7 @@ import {
   unexpectedError,
 } from './notion.error';
 import {
+  AppendBlockChildren,
   ComputedDatabase,
   GetTicketTypeIDCountOutput,
   NotionModuleOptions,
@@ -42,7 +43,7 @@ export class NotionService {
         headers: {
           Authorization: `Bearer ${this.options.notionSecret}`,
           'Content-Type': 'application/json',
-          'Notion-Version': '2021-08-16',
+          'Notion-Version': '2022-02-22',
           ...headers,
         },
       });
@@ -53,13 +54,22 @@ export class NotionService {
     }
   }
 
+  async appendBlockChildren(blockId: string, children: AppendBlockChildren[]) {
+    return await this.authRequest(`/v1/blocks/${blockId}/children`, {
+      method: 'PATCH',
+      body: {
+        children,
+      },
+    });
+  }
+
   async findPageByTicketRef(databaseId: string, ticketRef: string) {
     const { ticketRefField } = this.options;
     const page = await this.queryDatabaseData(databaseId, {
       filter: {
         property: ticketRefField,
         formula: {
-          text: { equals: ticketRef },
+          string: { equals: ticketRef },
         },
       },
     });
@@ -198,12 +208,12 @@ export class NotionService {
       Boolean(url) && url.toLowerCase() === prUrl.toLowerCase();
 
     if (results) {
-      results.forEach(async ({ id, object, properties }) => {
+      results.forEach(async ({ id, properties }) => {
         const defaultPrLink = properties[ticketPrLinkField]?.url;
         if (defaultPrLink === null) {
           await this.updatePage(id, { [ticketPrLinkField]: { url: prUrl } });
         } else {
-          // mentioned in PR Link property
+          // already mentioned in PR Link property
           if (isSameUrl(defaultPrLink)) return;
           const { results: children } = await this.getBlockChildren(id);
           let mentioned = false;
@@ -216,10 +226,10 @@ export class NotionService {
               // one with type  "text", which is for content 'Mention in'
               // the other one with type "mention", with href as the pr link
               // we need to check each block to see if there's a type "mention" with same PR link
-              const textArray = block[block.type]?.text;
+              const textArray = block[block.type]?.rich_text;
               if (textArray) {
-                textArray.forEach(({ type, href }) => {
-                  if (type === 'mention' && isSameUrl(href)) {
+                textArray.forEach(({ href, text }) => {
+                  if (isSameUrl(href) || isSameUrl(text?.link?.url)) {
                     mentioned = true;
                   }
                 });
@@ -227,6 +237,36 @@ export class NotionService {
             });
             if (!mentioned) {
               // append a block to page
+              await this.appendBlockChildren(id, [
+                {
+                  object: 'block',
+                  type: 'paragraph',
+                  paragraph: {
+                    rich_text: [
+                      {
+                        type: 'text',
+                        text: {
+                          content: 'Mentioned in: ',
+                          link: null,
+                        },
+                        plain_text: 'Mentioned in: ',
+                      },
+                      {
+                        type: 'text',
+                        text: {
+                          content: prUrl,
+                          link: {
+                            type: 'url',
+                            url: prUrl,
+                          },
+                        },
+                        href: prUrl,
+                        plain_text: prUrl,
+                      },
+                    ],
+                  },
+                },
+              ]);
             }
           }
         }

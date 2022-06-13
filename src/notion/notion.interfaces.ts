@@ -34,6 +34,38 @@ export interface ComputedDatabase {
   error?: string;
 }
 
+export type AppendableType =
+  | 'paragraph'
+  | 'heading_1'
+  | 'heading_2'
+  | 'heading_3'
+  | 'bulleted_list_item'
+  | 'numbered_list_item'
+  | 'to_do'
+  | 'toggle'
+  | 'child_page'
+  | 'child_database'
+  | 'embed'
+  | 'image'
+  | 'video'
+  | 'file'
+  | 'pdf'
+  | 'bookmark'
+  | 'callout'
+  | 'quote'
+  | 'equation'
+  | 'divider'
+  | 'table_of_contents'
+  | 'column'
+  | 'column_list'
+  | 'link_preview'
+  | 'synced_block'
+  | 'template'
+  | 'link_to_page'
+  | 'table'
+  | 'table_row'
+  | 'unsupported';
+
 export interface GetTicketTypeIDCountOutput {
   count?: number;
   error?: string;
@@ -96,7 +128,27 @@ type TextObject = {
   annotations: BlockAnnotation;
   plain_text: string;
   type: 'text' | 'mention' | 'equation';
+  text?: {
+    content: string;
+    link: { type: 'url' | 'link_preview'; url: string } | null;
+  };
+  link_preview?: { url: string };
+  mention?: {
+    type: 'link_preview';
+    link_preview: { url: string };
+    page?: { id: string };
+  };
   href: string | null;
+};
+
+export type AppendBlockChildren = {
+  object: 'block';
+  type: AppendableType;
+} & {
+  [key in AppendableType]?: {
+    text?: Partial<TextObject>[];
+    rich_text?: Partial<TextObject>[];
+  };
 };
 
 export interface RawBlockProps {
