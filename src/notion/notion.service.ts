@@ -124,6 +124,7 @@ export class NotionService {
 
   getStatus(status: Status): string | undefined {
     const { ticketStatus } = this.options;
+    console.log('OK');
     return ticketStatus?.[status];
   }
 
