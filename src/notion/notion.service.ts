@@ -124,7 +124,6 @@ export class NotionService {
 
   getStatus(status: Status): string | undefined {
     const { ticketStatus } = this.options;
-    console.log('OK');
     return ticketStatus?.[status];
   }
 
@@ -241,13 +240,12 @@ export class NotionService {
   async updateTicketStatus(pageId: string, status: Status): Promise<void> {
     const { manageStatus, ticketStatusField } = this.options;
     const statusString = this.getStatus(status);
-    console.log(statusString);
     if (!manageStatus || !statusString || !ticketStatusField) return;
     const page = await this.getPage(pageId);
     const statusObj = page.properties?.[ticketStatusField];
     // must be a select type
     if (statusObj?.select) {
-      console.log(statusObj.select);
+      return; // TODO manage status
     }
   }
 
@@ -284,7 +282,6 @@ export class NotionService {
             });
             if (!mentioned) {
               mentioned = true;
-              console.log('wtv');
               this.appendBlockChildren(id, makePrUrlMention(prUrl));
             }
           }

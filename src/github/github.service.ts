@@ -18,6 +18,8 @@ import {
 } from './github.interfaces';
 import { formatDomain, makeWebhookUrl, transformRepo } from './github.utils';
 
+const loggedRepos = [];
+
 const GITHUB_API = 'https://api.github.com';
 const WEBHOOK_EVENTS = ['pull_request'];
 
@@ -166,7 +168,7 @@ export class GithubService implements OnModuleInit {
   // if not, update it
   // Will not delete any existing hooks in case there's other services using webhooks
 
-  async createWebhookForOrg(): Promise<boolean> {
+  async createWebhookForRepo(repo: string): Promise<boolean> {
     if (!this.auth) {
       console.log('Trying to create webhook but github is not authenticated');
       return false;
@@ -174,7 +176,7 @@ export class GithubService implements OnModuleInit {
     const { domain, githubOrganization } = this.options;
     const url = makeWebhookUrl(domain);
     const created = await this.authRequest(
-      `/orgs/${githubOrganization}/hooks`,
+      `/repos/${githubOrganization}/${repo}/hooks`,
       {
         method: 'POST',
         body: {
@@ -189,19 +191,20 @@ export class GithubService implements OnModuleInit {
       },
     );
     if (created.errors) {
-      console.log('Failed to create webhook for organization, error details:');
+      console.log(`Failed to create webhook for ${repo}, error details:`);
       console.log(created);
       return false;
     }
+    console.log(`Created webhook for ${repo} with url ${url}`);
     return true;
   }
 
   // TODO: Add secret to config for more secured usage
-  async updateWebhook(hookId: number): Promise<boolean> {
+  async updateWebhook(repo: string, hookId: number): Promise<boolean> {
     const { domain, githubOrganization } = this.options;
     const url = makeWebhookUrl(domain);
     const updated = await this.authRequest(
-      `/orgs/${githubOrganization}/hooks/${hookId}`,
+      `/repos/${githubOrganization}/${repo}/hooks/${hookId}`,
       {
         method: 'PATCH',
         body: {
@@ -214,46 +217,50 @@ export class GithubService implements OnModuleInit {
       },
     );
     if (updated.errors) {
+      console.log(`Failed to update webhook of ${repo}`);
       console.log(updated.errors);
       return false;
     }
     return true;
   }
 
-  async manageWebhooks() {
+  async manageWebhooks(repos: string[]) {
     const { domain, githubOrganization } = this.options;
-    const webhooks: RawWebhooks[] = await this.authRequest(
-      `/orgs/${githubOrganization}/hooks`,
-      {},
-    );
-    // check if webhook already exists
-    if (webhooks && webhooks.length > 0) {
-      for (let i = 0; i < webhooks.length; i++) {
-        const hook = webhooks[i];
-        // check if there's hook matching our doamin
-        if (hook.config.url.toLowerCase() === makeWebhookUrl(domain)) {
-          // make sure the hook is triggered for the right events
-          let hasRequiredEvents = true;
-          WEBHOOK_EVENTS.forEach((requiredEvent) => {
-            const index = hook.events.findIndex(
-              (cur) => cur.toUpperCase() === requiredEvent.toUpperCase(),
-            );
-            if (index < 0 && hasRequiredEvents) hasRequiredEvents = false;
-          });
-          // avoid creating hook if there's matching webhook
-          if (hasRequiredEvents) return;
-          if (this.auth) {
-            console.log('Webhook events not matching! Trying to update it!');
-            await this.updateWebhook(hook.id);
-          } else {
-            console.log("Github not authenticated, can't update webhook");
+    repos.forEach(async (repo) => {
+      const webhooks: RawWebhooks[] = await this.authRequest(
+        `/repos/${githubOrganization}/${repo}/hooks`,
+        {},
+      );
+      // check if webhook already exists
+      if (webhooks && webhooks.length > 0) {
+        for (let i = 0; i < webhooks.length; i++) {
+          const hook = webhooks[i];
+          // check if there's hook matching our doamin
+          if (hook.config.url.toLowerCase() === makeWebhookUrl(domain)) {
+            // make sure the hook is triggered for the right events
+            let hasRequiredEvents = true;
+            WEBHOOK_EVENTS.forEach((requiredEvent) => {
+              const index = hook.events.findIndex(
+                (cur) => cur.toUpperCase() === requiredEvent.toUpperCase(),
+              );
+              if (index < 0 && hasRequiredEvents) hasRequiredEvents = false;
+            });
+            // avoid creating hook if there's matching webhook
+            if (hasRequiredEvents) return;
+            if (this.auth) {
+              console.log('Webhook events not matching! Trying to update it!');
+              await this.updateWebhook(repo, hook.id);
+              return;
+            } else {
+              console.log("Github not authenticated, can't update webhook");
+            }
           }
         }
       }
-    }
-    // create webhook if exist check failed
-    console.log('No valid webhook found, creating one.');
-    await this.createWebhookForOrg();
+      // create webhook if exist check failed
+      console.log('No valid webhook found, creating one.');
+      await this.createWebhookForRepo(repo);
+    });
   }
 
   // ... check if everything is healthy
@@ -261,9 +268,9 @@ export class GithubService implements OnModuleInit {
   async orgCheckUp() {
     const { githubOrganization } = this.options;
     if (!githubOrganization) return;
-    await this.manageWebhooks();
     const repos = await this.getRepos();
     if (repos && repos.length > 0) {
+      await this.manageWebhooks(repos.map(({ name }) => name));
       const { database } = await this.notionService.validateDatabase();
       if (!database) {
         console.log('Error getting notion database');
@@ -295,37 +302,28 @@ export class GithubService implements OnModuleInit {
     return res;
   }
 
-  async getDiffFromDiffUrl(url: string): Promise<any> {
-    const res = await this.authRequest(url, { fullUrl: true });
-    console.log(res);
-    return res;
-  }
-
   async getRepos(): Promise<GithubRepo[]> {
-    const { managePublicRepoAutolinks, githubOrganization } = this.options;
+    const { githubOrganization, managedRepos } = this.options;
     const shouldRun = this.isGithubIntegrationOn();
     if (!shouldRun || !this.auth) return;
     const rawRepos = await this.authRequest(
       `/orgs/${githubOrganization}/repos`,
-      {
-        params: {
-          type: managePublicRepoAutolinks ? 'all' : 'private',
-        },
-      },
+      { params: { type: 'all' } },
     );
-    console.log(`Found ${rawRepos.length} managed repos:`);
 
     const repos: GithubRepo[] = [];
     if (repos && rawRepos.length > 0) {
       for (let i = 0; i < rawRepos.length; i++) {
         const cur = rawRepos[i];
         const transformedRepo = transformRepo(cur);
-        console.log(
-          `${i + 1}: [${transformedRepo.isPrivate ? 'private' : 'public'}] ${
-            transformedRepo.name
-          }`,
-        );
-        repos.push(transformedRepo);
+        if (managedRepos.includes(transformedRepo.name)) {
+          if (!loggedRepos.includes(transformedRepo.name)) {
+            console.log(`Managing ${transformedRepo.name}`);
+            loggedRepos.push(transformedRepo.name);
+          }
+          loggedRepos.push(transformRepo.name);
+          repos.push(transformedRepo);
+        }
       }
     }
     return repos;
@@ -345,8 +343,8 @@ export class GithubService implements OnModuleInit {
     }
     const commits = await this.getCommitsFromCommitsUrl(commits_url);
     let summary = title;
-    commits.forEach((commit) => {
-      summary += ` ${commit.commit.message}`;
+    commits.forEach(({ commit }) => {
+      summary += ` ${commit.message}`;
     });
     const refsMentioned = findTicketRefInString(summary, database.tags);
     if (refsMentioned.length === 0)

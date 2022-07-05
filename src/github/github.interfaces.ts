@@ -4,7 +4,7 @@ export interface GithubModuleOptions {
   githubPersonalAccessToken?: string;
   githubOrganization?: string;
   manageAutolinks: boolean;
-  managePublicRepoAutolinks: boolean;
+  managedRepos: string[];
 }
 
 export interface GithubRepo {
