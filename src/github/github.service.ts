@@ -353,11 +353,6 @@ export class GithubService implements OnModuleInit {
     refsMentioned.forEach((ref) => {
       this.notionService.updateTicketWithPR(ref, html_url);
     });
-
-    // also will update ticket status depending on whether it's open, in progress, draft, merged
-
-    // check if there's other comment in this PR by this bot
-    // then check if we're going to post redundant content, if not, post new comment with QA template, and mentioned tickets
   }
 
   async onModuleInit() {

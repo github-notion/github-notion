@@ -296,10 +296,7 @@ export class NotionService {
     count: number,
   ) {
     const allTickets = await this.listTicketsOfType(databaseId, ticketType);
-    if (allTickets.length === 0) {
-      console.log(`[Ticket Type: ${ticketType}] No ticket to update!`);
-      return;
-    }
+    if (allTickets.length === 0) return;
     console.log(
       `[Ticket Type: ${ticketType}] ${allTickets.length} ticket(s) to update.`,
     );
