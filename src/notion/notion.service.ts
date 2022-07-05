@@ -280,6 +280,7 @@ export class NotionService {
                     mentioned = true;
                 });
             });
+            console.log(`${ticketRef} ${mentioned}`);
             if (!mentioned) {
               mentioned = true;
               this.appendBlockChildren(id, makePrUrlMention(prUrl));

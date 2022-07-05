@@ -22,11 +22,13 @@ export const findTicketRefInString = (
   }
 
   const mentions = [];
+  const mentionedRef = {};
   // find all ticket refs mentioned in any string
   for (let i = 0; i < to.length; i++) {
     const cur = to[i].toUpperCase();
     const prefix = cur.split('-')[0];
-    if (ticketTypesMap[prefix]) {
+    if (ticketTypesMap[prefix] && !mentionedRef[cur]) {
+      mentionedRef[cur] = true;
       mentions.push(cur);
     }
   }

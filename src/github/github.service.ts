@@ -332,7 +332,7 @@ export class GithubService implements OnModuleInit {
   // ... all webhooks
 
   async pullRequestOpened({
-    pull_request: { number, title, html_url, commits_url, id },
+    pull_request: { number, title, html_url, commits_url, id, body },
     repository: { full_name },
   }: RawHookPullsOpened) {
     console.log(`PR #${number} opened @ ${full_name}`);
@@ -342,7 +342,7 @@ export class GithubService implements OnModuleInit {
       return;
     }
     const commits = await this.getCommitsFromCommitsUrl(commits_url);
-    let summary = title;
+    let summary = `${title} ${body}`;
     commits.forEach(({ commit }) => {
       summary += ` ${commit.message}`;
     });
