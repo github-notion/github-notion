@@ -335,7 +335,7 @@ export class NotionService {
     }
   }
 
-  @Interval(30000)
+  @Interval(5000)
   async updateTaskIds() {
     let started = false;
     try {
