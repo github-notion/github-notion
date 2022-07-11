@@ -59,9 +59,9 @@ To use this for ticket management, you must have few properties in your Notion d
 - `GITHUB_USERNAME` (Optional): The github account that will be used to access all API calls.
 - `GITHUB_PERSONAL_ACCESS_TOKEN` (Optional): You can create a `Personal Access Token` under github personal account's settings page. You are encouraged to create a dummy account dedicated to your organization. Github recommends this approach and calls it `machine user`
 - `GITHUB_ORGANIZATION` (Optional): The github organization to use this dashboard with.
+- `GITHUB_MANAGED_REPOS`: List all repos this bot should manage. They should all belong to the same organization.
 - `MANAGE_STATUS` (Optional, default to `false`): Whether the integration should update ticket statuses. Allowed values are: `true` | `false`
 - `MANAGE_AUTOLINKS`(Optional, default to `true`): Whether the integration should update autolinks of each repo. Allowed values are: `true` | `false`
-- `MANAGE_PUBLIC_REPO_AUTOLINKS` (Optional, default to `false`): Whether public repo's autolinks should be managed. This is useful if you don't want to expose ticket urls to public through public repos.
 - `TICKET_TYPE_FIELD`: Refer to `Important Properties` of `Notion`
 - `TICKET_ID_FIELD`: Refer to `Important Properties` of `Notion`
 - `TICKET_REF_FIELD`: Refer to `Important Properties` of `Notion`
