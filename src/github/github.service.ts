@@ -360,7 +360,8 @@ export class GithubService implements OnModuleInit {
     await this.checkAuth();
   }
 
-  @Interval(10000)
+  // run check up every minutes
+  @Interval(60000)
   async healthChecks() {
     // github integration is turned off if githubUsername/githubPersonalAccessToken is not provided
     const shouldRun = this.isGithubIntegrationOn();
