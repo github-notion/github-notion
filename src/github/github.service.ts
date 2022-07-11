@@ -328,8 +328,15 @@ export class GithubService implements OnModuleInit {
 
   async pullRequestOpened({
     pull_request: { number, title, html_url, commits_url, id, body },
-    repository: { full_name },
+    repository: { name, full_name, owner },
   }: RawHookPullsOpened) {
+    const { githubOrganization, managedRepos } = this.options;
+
+    const isManagedRepo = managedRepos.includes(name);
+    const isManagedOwner =
+      owner.login.toLowerCase() === githubOrganization.toLowerCase();
+    if (!isManagedRepo || !isManagedOwner) return;
+
     console.log(`PR #${number} opened @ ${full_name}`);
     const { database } = await this.notionService.validateDatabase();
     if (!database) {
