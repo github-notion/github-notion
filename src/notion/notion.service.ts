@@ -12,18 +12,51 @@ import {
   unexpectedError,
 } from './notion.error';
 import {
+  AppendBlockChildren,
   ComputedDatabase,
   GetTicketTypeIDCountOutput,
   NotionModuleOptions,
   QueryDatabaseProps,
+  RawBlockDataProps,
   RawDatabaseDataProps,
   RawDatabaseProps,
   RawPageProps,
+  Status,
 } from './notion.interfaces';
 
 const NOTION_API = 'https://api.notion.com';
 let updateLock = false;
 
+const makePrUrlMention = (prUrl: string): AppendBlockChildren[] => [
+  {
+    object: 'block',
+    type: 'paragraph',
+    paragraph: {
+      rich_text: [
+        {
+          type: 'text',
+          text: {
+            content: 'Mentioned in: ',
+            link: null,
+          },
+          plain_text: 'Mentioned in: ',
+        },
+        {
+          type: 'text',
+          text: {
+            content: prUrl,
+            link: {
+              type: 'url',
+              url: prUrl,
+            },
+          },
+          href: prUrl,
+          plain_text: prUrl,
+        },
+      ],
+    },
+  },
+];
 @Injectable()
 export class NotionService {
   constructor(
@@ -41,7 +74,7 @@ export class NotionService {
         headers: {
           Authorization: `Bearer ${this.options.notionSecret}`,
           'Content-Type': 'application/json',
-          'Notion-Version': '2021-08-16',
+          'Notion-Version': '2022-02-22',
           ...headers,
         },
       });
@@ -52,22 +85,46 @@ export class NotionService {
     }
   }
 
+  async appendBlockChildren(blockId: string, children: AppendBlockChildren[]) {
+    return await this.authRequest(`/v1/blocks/${blockId}/children`, {
+      method: 'PATCH',
+      body: {
+        children,
+      },
+    });
+  }
+
   async findPageByTicketRef(databaseId: string, ticketRef: string) {
     const { ticketRefField } = this.options;
     const page = await this.queryDatabaseData(databaseId, {
       filter: {
         property: ticketRefField,
         formula: {
-          text: { equals: ticketRef },
+          string: { equals: ticketRef },
         },
       },
     });
     return page;
   }
 
+  async getBlockChildren(
+    blockOrPageId: string,
+  ): Promise<RawBlockDataProps | undefined> {
+    return await this.authRequest(`/v1/blocks/${blockOrPageId}/children`, {});
+  }
+
   async getDatabase(databaseId: string): Promise<RawDatabaseProps | undefined> {
     const database = await this.authRequest(`/v1/databases/${databaseId}`, {});
     return database;
+  }
+
+  async getPage(pageId: string): Promise<RawPageProps | undefined> {
+    return await this.authRequest(`/v1/pages/${pageId}`, {});
+  }
+
+  getStatus(status: Status): string | undefined {
+    const { ticketStatus } = this.options;
+    return ticketStatus?.[status];
   }
 
   async getTicketsOfType(
@@ -180,6 +237,59 @@ export class NotionService {
     });
   }
 
+  async updateTicketStatus(pageId: string, status: Status): Promise<void> {
+    const { manageStatus, ticketStatusField } = this.options;
+    const statusString = this.getStatus(status);
+    if (!manageStatus || !statusString || !ticketStatusField) return;
+    const page = await this.getPage(pageId);
+    const statusObj = page.properties?.[ticketStatusField];
+    // must be a select type
+    if (statusObj?.select) {
+      return; // TODO manage status
+    }
+  }
+
+  async updateTicketWithPR(ticketRef: string, prUrl: string): Promise<void> {
+    const { notionDatabaseId, ticketPrLinkField } = this.options;
+    const { results } = await this.findPageByTicketRef(
+      notionDatabaseId,
+      ticketRef,
+    );
+
+    const isSameUrl = (url: string | null): boolean =>
+      Boolean(url) && url.toLowerCase() === prUrl.toLowerCase();
+
+    if (results) {
+      for (let i = 0; i < results.length; i++) {
+        const { id, properties } = results[i];
+        this.updateTicketStatus(id, Status.IN_PROGRESS);
+        const defaultPrLink = properties[ticketPrLinkField]?.url;
+        if (defaultPrLink === null) {
+          await this.updatePage(id, { [ticketPrLinkField]: { url: prUrl } });
+        } else {
+          // already mentioned in PR Link property
+          if (isSameUrl(defaultPrLink)) return;
+          const { results: blocks } = await this.getBlockChildren(id);
+          let mentioned = false;
+          if (blocks) {
+            blocks.forEach((block) => {
+              const textArray = block[block.type]?.rich_text;
+              if (textArray)
+                textArray.forEach(({ href, text }) => {
+                  if (isSameUrl(href) || isSameUrl(text?.link?.url))
+                    mentioned = true;
+                });
+            });
+            if (!mentioned) {
+              mentioned = true;
+              this.appendBlockChildren(id, makePrUrlMention(prUrl));
+            }
+          }
+        }
+      }
+    }
+  }
+
   async updateTicketsWithType(
     databaseId: string,
     ticketType: string,
@@ -239,7 +349,7 @@ export class NotionService {
       updateLock = true;
       started = true;
       const { notionDatabaseId } = this.options;
-      console.log('Start update task ID');
+
       const { database, error: validateDatabaseError } =
         await this.validateDatabase();
       if (validateDatabaseError) throw new Error(validateDatabaseError);
