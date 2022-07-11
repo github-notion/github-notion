@@ -306,23 +306,18 @@ export class GithubService implements OnModuleInit {
     const { githubOrganization, managedRepos } = this.options;
     const shouldRun = this.isGithubIntegrationOn();
     if (!shouldRun || !this.auth) return;
-    const rawRepos = await this.authRequest(
-      `/orgs/${githubOrganization}/repos`,
-      { params: { type: 'all' } },
-    );
-
     const repos: GithubRepo[] = [];
-    if (repos && rawRepos.length > 0) {
-      for (let i = 0; i < rawRepos.length; i++) {
-        const cur = rawRepos[i];
-        const transformedRepo = transformRepo(cur);
-        if (managedRepos.includes(transformedRepo.name)) {
-          if (!loggedRepos.includes(transformedRepo.name)) {
-            console.log(`Managing ${transformedRepo.name}`);
-            loggedRepos.push(transformedRepo.name);
-          }
-          loggedRepos.push(transformRepo.name);
-          repos.push(transformedRepo);
+    for (let i = 0; i < managedRepos.length; i++) {
+      const repo = await this.authRequest(
+        `/repos/${githubOrganization}/${managedRepos[i]}`,
+        {},
+      );
+      if (repo && repo.id) {
+        const transformedRepo = transformRepo(repo);
+        repos.push(transformedRepo);
+        if (!loggedRepos.includes(transformedRepo.fullName)) {
+          loggedRepos.push(transformedRepo.fullName);
+          console.log(`Managing ${transformedRepo.fullName}`);
         }
       }
     }
@@ -361,7 +356,7 @@ export class GithubService implements OnModuleInit {
   }
 
   // run check up every minutes
-  @Interval(60000)
+  @Interval(10000)
   async healthChecks() {
     // github integration is turned off if githubUsername/githubPersonalAccessToken is not provided
     const shouldRun = this.isGithubIntegrationOn();
